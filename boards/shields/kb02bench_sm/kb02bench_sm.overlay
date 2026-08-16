@@ -1,0 +1,57 @@
+/*
+ * kb02bench_sm — SuperMini nRF52840（nice!nano v2 互換）＋ SK8707-01 ＋ 2×2 仮マトリクス
+ *
+ * 用途：XIAO 到着前の事前ベンチ（検証 A/B）。技適なしのため build.yaml で CONFIG_ZMK_BLE=n（USB のみ）。
+ * ボード：nice_nano_v2
+ */
+
+#include <dt-bindings/zmk/matrix_transform.h>
+
+/ {
+    chosen {
+        zmk,kscan = &kscan0;
+        zmk,matrix-transform = &default_transform;
+    };
+
+    default_transform: keymap_transform_0 {
+        compatible = "zmk,matrix-transform";
+        columns = <2>;
+        rows = <2>;
+        map = <
+            RC(0,0) RC(0,1)
+            RC(1,0) RC(1,1)
+        >;
+    };
+
+    kscan0: kscan0 {
+        compatible = "zmk,kscan-gpio-matrix";
+        wakeup-source;
+        diode-direction = "col2row";
+
+        row-gpios
+            = <&gpio1 0  (GPIO_ACTIVE_HIGH | GPIO_PULL_DOWN)>   /* ROW0 = D6  P1.00 */
+            , <&gpio0 11 (GPIO_ACTIVE_HIGH | GPIO_PULL_DOWN)>   /* ROW1 = D7  P0.11 */
+            ;
+        col-gpios
+            = <&gpio1 13 GPIO_ACTIVE_HIGH>                      /* COL0 = D15 P1.13 */
+            , <&gpio1 15 GPIO_ACTIVE_HIGH>                      /* COL1 = D18 P1.15 */
+            ;
+    };
+};
+
+/* ---------- PS/2 TrackPoint（SuperMini：Pro Micro の SDA/SCL = D2/D3、高周波ピン） ---------- */
+#define MOUSE_PS2_DRIVER_UART
+
+#define MOUSE_PS2_PIN_SCL          <&gpio0 20 GPIO_ACTIVE_HIGH>   /* CLK  = D3 P0.20 */
+#define MOUSE_PS2_PIN_SDA          <&gpio0 17 GPIO_ACTIVE_HIGH>   /* DATA = D2 P0.17 */
+#define MOUSE_PS2_PIN_SDA_PINCTRL  <NRF_PSEL(UART_RX, 0, 17)>
+#define MOUSE_PS2_PIN_RST          <&gpio1 6  GPIO_ACTIVE_HIGH>   /* RST  = D9 P1.06 */
+
+// nice!nano 系の未露出ピン（サンプルどおり。変更不要）
+#define MOUSE_PS2_PIN_UNEXPOSED_TX <NRF_PSEL(UART_TX, 0, 27)>
+#define MOUSE_PS2_PIN_UNEXPOSED_RX <NRF_PSEL(UART_RX, 0, 28)>
+
+#define MOUSE_PS2_UART_BAUD_RATE   <14400>
+
+#include "../kb02_common/tp_irq_priorities.dtsi"
+#include "../kb02_common/tp_ps2.dtsi"

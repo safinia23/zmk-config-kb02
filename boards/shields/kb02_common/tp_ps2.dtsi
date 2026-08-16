@@ -1,0 +1,106 @@
+/*
+ * PS/2 TrackPoint (Sprintek SK8707-01) デバイス定義 — 共通部
+ *
+ * 出典：infused-kim/kb_zmk_ps2_mouse_trackpoint_driver-zmk_config
+ *       boards/shields/corne_tp/corne_tp_right.overlay の "Device Definitions" 節。
+ *
+ * この dtsi を include する前に、次のマクロを定義しておくこと（overlay 側）：
+ *   MOUSE_PS2_PIN_SCL            <&gpioX N GPIO_ACTIVE_HIGH>   CLK
+ *   MOUSE_PS2_PIN_SDA            <&gpioX N GPIO_ACTIVE_HIGH>   DATA
+ *   MOUSE_PS2_PIN_SDA_PINCTRL    <NRF_PSEL(UART_RX, X, N)>     DATA と同じピン（pinctrl 表記）
+ *   MOUSE_PS2_PIN_RST            <&gpioX N GPIO_ACTIVE_HIGH>   任意。無ければ未定義のまま
+ *   MOUSE_PS2_PIN_UNEXPOSED_TX   <NRF_PSEL(UART_TX, X, N)>     基板に出ていない未使用ピン
+ *   MOUSE_PS2_PIN_UNEXPOSED_RX   <NRF_PSEL(UART_RX, X, N)>     同上（別ピン）
+ *   MOUSE_PS2_UART_BAUD_RATE     <14400>                       まず 14400。ダメなら 9600 / 19200
+ *   MOUSE_PS2_DRIVER_UART        定義すると UART ドライバ、未定義なら GPIO ドライバ
+ *
+ * ここで定義するノードは全部 status = "disabled"。keymap 側の
+ * config/include/mouse_tp.dtsi で HAS_MOUSE_TP のときだけ "okay" にする（サンプル踏襲）。
+ */
+
+// keymap 側で「この overlay に TP 定義がある」と判定するためのフラグ
+#define MOUSE_PS2_DT_PRESENT
+
+&pinctrl {
+    // 受信状態：UART_TX は未露出ピン、UART_RX は PS/2 の DATA ピン
+    uart0_ps2_default: uart0_ps2_default {
+        group1 {
+            psels = MOUSE_PS2_PIN_UNEXPOSED_TX,
+                    MOUSE_PS2_PIN_SDA_PINCTRL;
+        };
+    };
+
+    uart0_ps2_sleep: uart0_ps2_sleep {
+        group1 {
+            psels = MOUSE_PS2_PIN_UNEXPOSED_TX,
+                    MOUSE_PS2_PIN_SDA_PINCTRL;
+            low-power-enable;
+        };
+    };
+
+    // 送信時：nRF52 の UART は PS/2 の送信フレームに合わないので、ドライバは
+    // UART を未露出ピンに退避させ、SCL/SDA を GPIO ビットバンで駆動する
+    uart0_ps2_off: uart0_ps2_off {
+        group1 {
+            psels = MOUSE_PS2_PIN_UNEXPOSED_TX,
+                    MOUSE_PS2_PIN_UNEXPOSED_RX;
+        };
+    };
+};
+
+#ifdef MOUSE_PS2_DRIVER_UART
+
+    &uart0 {
+        status = "disabled";
+        compatible = "nordic,nrf-uarte";
+
+        current-speed = MOUSE_PS2_UART_BAUD_RATE;
+        pinctrl-0 = <&uart0_ps2_default>;
+        pinctrl-1 = <&uart0_ps2_off>;
+        pinctrl-names = "default", "sleep";
+
+        uart_ps2: uart_ps2 {
+            status = "disabled";
+            compatible = "uart-ps2";
+            scl-gpios = MOUSE_PS2_PIN_SCL;
+            sda-gpios = MOUSE_PS2_PIN_SDA;
+        };
+    };
+
+#else
+
+    / {
+        gpio_ps2: gpio_ps2 {
+            status = "disabled";
+            compatible = "gpio-ps2";
+            scl-gpios = MOUSE_PS2_PIN_SCL;
+            sda-gpios = MOUSE_PS2_PIN_SDA;
+        };
+    };
+
+#endif
+
+/ {
+    mouse_ps2: mouse_ps2 {
+        status = "disabled";
+        compatible = "zmk,input-mouse-ps2";
+
+#ifdef MOUSE_PS2_DRIVER_UART
+        ps2-device = <&uart_ps2>;
+#else
+        ps2-device = <&gpio_ps2>;
+#endif
+
+#ifdef MOUSE_PS2_PIN_RST
+        // SK8707-01 の RST は Active-High（内蔵プルダウン）。ドライバが POR シーケンスを実行する
+        rst-gpios = MOUSE_PS2_PIN_RST;
+#endif
+    };
+
+    mouse_ps2_input_listener: mouse_ps2_input_listener {
+        // 注意：ZMK main に乗り換える場合は "zmk,input-listener" に変える必要がある可能性大
+        compatible = "zmk,input-listener-ps2";
+        status = "disabled";
+        device = <&mouse_ps2>;
+    };
+};

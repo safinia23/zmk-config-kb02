@@ -1,0 +1,71 @@
+/*
+ * kb02bench_xiao — XIAO nRF52840 Plus ＋ SK8707-01 ＋ 2×2 仮マトリクス（単体・非 split）
+ *
+ * 用途：ベンチ検証 B/D（TP がカーソルを動かすか、ピン割当が正しいか）。USB でも BLE でも可。
+ * ボード：seeeduino_xiao_ble
+ */
+
+#include <dt-bindings/zmk/matrix_transform.h>
+
+/* ---------- 2×2 仮マトリクス ---------- */
+/ {
+    chosen {
+        zmk,kscan = &kscan0;
+        zmk,matrix-transform = &default_transform;
+    };
+
+    default_transform: keymap_transform_0 {
+        compatible = "zmk,matrix-transform";
+        columns = <2>;
+        rows = <2>;
+        map = <
+            RC(0,0) RC(0,1)
+            RC(1,0) RC(1,1)
+        >;
+    };
+
+    kscan0: kscan0 {
+        compatible = "zmk,kscan-gpio-matrix";
+        wakeup-source;
+        diode-direction = "col2row";   /* ダイオードのカソード（帯）を ROW 側に */
+
+        row-gpios
+            = <&gpio0 2 (GPIO_ACTIVE_HIGH | GPIO_PULL_DOWN)>   /* ROW0 = D0 P0.02 */
+            , <&gpio0 3 (GPIO_ACTIVE_HIGH | GPIO_PULL_DOWN)>   /* ROW1 = D1 P0.03 */
+            ;
+        col-gpios
+            = <&gpio0 4 GPIO_ACTIVE_HIGH>                      /* COL0 = D4 P0.04 */
+            , <&gpio0 5 GPIO_ACTIVE_HIGH>                      /* COL1 = D5 P0.05 */
+            ;
+    };
+};
+
+/* ---------- PS/2 TrackPoint ピン設定（XIAO ベンチ：まず表ピンで） ---------- */
+
+// UART ドライバを使う（コメントアウトすると GPIO ドライバ）
+#define MOUSE_PS2_DRIVER_UART
+
+// ベンチ 1 段目：表ピン D6/D7（低周波ピンだが機能確認には十分）
+#define MOUSE_PS2_PIN_SCL          <&gpio1 11 GPIO_ACTIVE_HIGH>   /* CLK  = D6 P1.11 */
+#define MOUSE_PS2_PIN_SDA          <&gpio1 12 GPIO_ACTIVE_HIGH>   /* DATA = D7 P1.12 */
+#define MOUSE_PS2_PIN_SDA_PINCTRL  <NRF_PSEL(UART_RX, 1, 12)>     /* DATA と同じピン */
+
+// ベンチ 2 段目（最終割当）：端面追加パッド D11/D12（高周波ピン）に細線を半田したらこちらへ
+// #define MOUSE_PS2_PIN_SCL          <&gpio0 19 GPIO_ACTIVE_HIGH>   /* CLK  = D12 P0.19 */
+// #define MOUSE_PS2_PIN_SDA          <&gpio0 15 GPIO_ACTIVE_HIGH>   /* DATA = D11 P0.15 */
+// #define MOUSE_PS2_PIN_SDA_PINCTRL  <NRF_PSEL(UART_RX, 0, 15)>
+
+// RST（SK8707-01 pin 4、Active-High）。RST を配線しないならこの行を消す
+#define MOUSE_PS2_PIN_RST          <&gpio0 28 GPIO_ACTIVE_HIGH>   /* RST = D2 P0.28（最終は D13 P1.01） */
+
+// UART が要求する「もう一方のピン」用に、基板に出ていない未使用ピンを充てる
+// ※XIAO nRF52840 の回路図で P0.11 / P0.12 が未使用であることを要確認（Sense 版は P0.27=IMU SCL、P0.16=PDM DIN なので避けた）（LED: P0.26/P0.30/P0.06、
+//   QSPI: P0.20/P0.21/P0.22/P0.23/P0.25/P0.17、電池: P0.31/P0.14/P0.13 は避ける）
+#define MOUSE_PS2_PIN_UNEXPOSED_TX <NRF_PSEL(UART_TX, 0, 11)>
+#define MOUSE_PS2_PIN_UNEXPOSED_RX <NRF_PSEL(UART_RX, 0, 12)>
+
+// ボーレート：まず 14400。動かなければ 9600 → 19200
+#define MOUSE_PS2_UART_BAUD_RATE   <14400>
+
+#include "../kb02_common/tp_irq_priorities.dtsi"
+#include "../kb02_common/tp_ps2.dtsi"

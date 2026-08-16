@@ -1,0 +1,6 @@
+if SHIELD_KB02BENCH_SM
+
+config ZMK_KEYBOARD_NAME
+    default "kb02 bench SM"
+
+endif

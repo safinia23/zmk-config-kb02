@@ -1,0 +1,9 @@
+/* kb02test 左（peripheral）— XIAO nRF52840 Plus。TP なし */
+#include "kb02test.dtsi"
+
+&kscan0 {
+    col-gpios
+        = <&gpio0 4 GPIO_ACTIVE_HIGH>   /* COL0 = D4 P0.04 */
+        , <&gpio0 5 GPIO_ACTIVE_HIGH>   /* COL1 = D5 P0.05 */
+        ;
+};

@@ -1,0 +1,6 @@
+if SHIELD_KB02BENCH_XIAO
+
+config ZMK_KEYBOARD_NAME
+    default "kb02 bench XIAO"
+
+endif

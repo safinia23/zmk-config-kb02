@@ -1,0 +1,25 @@
+# GitHub Actions のビルドマトリクス
+---
+include:
+  # ---- ベンチ（単体・非 split）----
+  # XIAO nRF52840 Plus ＋ SK8707-01 ＋ 2×2 仮マトリクス（USB / BLE 両方可）
+  - board: seeeduino_xiao_ble
+    shield: kb02bench_xiao
+
+  # SuperMini（技適なし）→ BLE を無効化して USB のみ。XIAO 到着前の事前ベンチ用
+  - board: nice_nano_v2
+    shield: kb02bench_sm
+    cmake-args: -DCONFIG_ZMK_BLE=n
+    artifact-name: kb02bench_sm-nice_nano_v2-usb_only
+
+  # ---- split（XIAO Plus ×2、右＝central＋TP）----
+  - board: seeeduino_xiao_ble
+    shield: kb02test_left
+  - board: seeeduino_xiao_ble
+    shield: kb02test_right
+
+  # ---- settings reset ----
+  - board: seeeduino_xiao_ble
+    shield: settings_reset
+  - board: nice_nano_v2
+    shield: settings_reset

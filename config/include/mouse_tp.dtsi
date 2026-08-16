@@ -1,0 +1,55 @@
+/*
+ * TrackPoint 設定＋ノード有効化（keymap から include）
+ * 出典：infused-kim サンプル config/include/mouse_tp.dtsi を kb02 用に簡略化。
+ *
+ * overlay 側の tp_ps2.dtsi は全ノードを "disabled" で定義しているので、
+ * HAS_MOUSE_TP かつ MOUSE_PS2_DT_PRESENT（TP のある側）のときだけここで "okay" にする。
+ */
+#ifdef HAS_MOUSE_TP
+  #include <dt-bindings/zmk/mouse.h>
+  #include <dt-bindings/zmk/mouse_settings.h>
+  #include <behaviors/mouse_keys.dtsi>       /* &mkp / &mmv（infused-kim fork）。ZMK main では不要になる可能性 */
+  #include <behaviors/mouse_setting.dtsi>    /* &mms（TP 感度などの実行時調整） */
+
+  // 実行時に TP 設定を調整するキー（ベンチで感度を追い込むのに便利）
+  #define U_MSS_TP_S_I  &mms MS_TP_SENSITIVITY_INCR
+  #define U_MSS_TP_S_D  &mms MS_TP_SENSITIVITY_DECR
+  #define U_MSS_TP_V6_I &mms MS_TP_VALUE6_INCR
+  #define U_MSS_TP_V6_D &mms MS_TP_VALUE6_DECR
+  #define U_MSS_RESET   &mms MS_RESET
+  #define U_MSS_LOG     &mms MS_LOG
+
+  #ifdef MOUSE_PS2_DT_PRESENT
+
+    &mouse_ps2_input_listener {
+      // 必要なら軸調整（実機で向きが逆なら有効化）
+      // xy-swap;
+      // x-invert;
+      // y-invert;
+
+      // マウス移動中に自動でレイヤーを上げたい場合（keymap のレイヤー番号に合わせる）
+      // layer-toggle = <MOUSE_TP>;
+      // layer-toggle-delay-ms = <250>;
+      // layer-toggle-timeout-ms = <250>;
+    };
+
+    &mouse_ps2 {
+      // tp-sensitivity = <128>;        // 既定 128
+      // tp-val6-upper-speed = <97>;    // 既定 97
+      // tp-neg-inertia = <6>;          // 既定 6
+      // sampling-rate = <60>;          // 10,20,40,60,80,100,200（既定 100）。通信エラー時に下げる
+      // tp-press-to-select;            // SK8707-01 は Z-Tap 対応なので試す価値あり
+    };
+
+    &mouse_ps2 { status = "okay"; };
+    &mouse_ps2_input_listener { status = "okay"; };
+
+    #ifdef MOUSE_PS2_DRIVER_UART
+      &uart0    { status = "okay"; };
+      &uart_ps2 { status = "okay"; };
+    #else
+      &gpio_ps2 { status = "okay"; };
+    #endif
+
+  #endif  // MOUSE_PS2_DT_PRESENT
+#endif  // HAS_MOUSE_TP

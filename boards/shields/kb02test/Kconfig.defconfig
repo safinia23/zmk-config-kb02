@@ -1,0 +1,17 @@
+# 右＝central（TP は central 側にしか繋げない）。ZMK 既定は左 central なので反転する。
+if SHIELD_KB02TEST_RIGHT
+
+config ZMK_KEYBOARD_NAME
+    default "kb02 test"
+
+config ZMK_SPLIT_ROLE_CENTRAL
+    default y
+
+endif
+
+if SHIELD_KB02TEST_LEFT || SHIELD_KB02TEST_RIGHT
+
+config ZMK_SPLIT
+    default y
+
+endif

@@ -1,0 +1,36 @@
+/* kb02test 右（central）— XIAO nRF52840 Plus ＋ SK8707-01 */
+#include "kb02test.dtsi"
+
+&default_transform {
+    col-offset = <2>;
+};
+
+&kscan0 {
+    col-gpios
+        = <&gpio0 4 GPIO_ACTIVE_HIGH>   /* COL0 = D4 P0.04 */
+        , <&gpio0 5 GPIO_ACTIVE_HIGH>   /* COL1 = D5 P0.05 */
+        ;
+};
+
+/* ---------- PS/2 TrackPoint（kb02bench_xiao と同じ割当） ---------- */
+#define MOUSE_PS2_DRIVER_UART
+
+// ベンチ 1 段目：表ピン D6/D7
+#define MOUSE_PS2_PIN_SCL          <&gpio1 11 GPIO_ACTIVE_HIGH>   /* CLK  = D6 P1.11 */
+#define MOUSE_PS2_PIN_SDA          <&gpio1 12 GPIO_ACTIVE_HIGH>   /* DATA = D7 P1.12 */
+#define MOUSE_PS2_PIN_SDA_PINCTRL  <NRF_PSEL(UART_RX, 1, 12)>
+
+// 最終割当（端面 D11/D12、高周波ピン）に切り替えるときは上 3 行を消してこちらを有効化
+// #define MOUSE_PS2_PIN_SCL          <&gpio0 19 GPIO_ACTIVE_HIGH>   /* CLK  = D12 P0.19 */
+// #define MOUSE_PS2_PIN_SDA          <&gpio0 15 GPIO_ACTIVE_HIGH>   /* DATA = D11 P0.15 */
+// #define MOUSE_PS2_PIN_SDA_PINCTRL  <NRF_PSEL(UART_RX, 0, 15)>
+
+#define MOUSE_PS2_PIN_RST          <&gpio0 28 GPIO_ACTIVE_HIGH>   /* RST = D2 P0.28（最終は D13 P1.01） */
+
+#define MOUSE_PS2_PIN_UNEXPOSED_TX <NRF_PSEL(UART_TX, 0, 11)>     /* 要確認：XIAO で未使用か（Sense 版の P0.27/P0.16/P0.07/P1.00 は避ける） */
+#define MOUSE_PS2_PIN_UNEXPOSED_RX <NRF_PSEL(UART_RX, 0, 12)>
+
+#define MOUSE_PS2_UART_BAUD_RATE   <14400>
+
+#include "../kb02_common/tp_irq_priorities.dtsi"
+#include "../kb02_common/tp_ps2.dtsi"
