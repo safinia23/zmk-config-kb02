@@ -2,4 +2,7 @@ on: [push, pull_request, workflow_dispatch]
 
 jobs:
   build:
-    uses: zmkfirmware/zmk/.github/workflows/build-user-config.yml@main
+    # config/west.yml が指す ZMK と同じ世代のワークフローを使う。
+    # main ブランチ = infused-kim fork（pr-testing/mouse_ps2_module_base）なので fork 側の workflow に固定。
+    # ZMK main に乗り換えるときは zmkfirmware/zmk/.github/workflows/build-user-config.yml@main に戻す。
+    uses: infused-kim/zmk/.github/workflows/build-user-config.yml@pr-testing/mouse_ps2_module_base
